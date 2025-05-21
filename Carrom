@@ -1,0 +1,140 @@
+// Get the canvas element
+const canvas = document.createElement('canvas');
+document.body.appendChild(canvas);
+const ctx = canvas.getContext('2d');
+
+// Set canvas dimensions
+canvas.width = 800;
+canvas.height = 800;
+
+// Define game constants
+const BOARD_WIDTH = canvas.width;
+const BOARD_HEIGHT = canvas.height;
+const STRIKER_SIZE = 20;
+const COIN_SIZE = 10;
+const QUEEN_SIZE = 15;
+const HOLE_SIZE = 20;
+
+// Define game variables
+let striker = {
+    x: BOARD_WIDTH / 2,
+    y: BOARD_HEIGHT - 50,
+    vx: 0,
+    vy: 0,
+    radius: STRIKER_SIZE / 2,
+    color: 'white',
+};
+
+let coins = [];
+for (let i = 0; i < 9; i++) {
+    coins.push({
+        x: BOARD_WIDTH / 2 + (i - 4) * 20,
+        y: BOARD_HEIGHT / 2,
+        radius: COIN_SIZE / 2,
+        color: i < 4 ? 'black' : 'gold',
+    });
+}
+
+let queen = {
+    x: BOARD_WIDTH / 2,
+    y: BOARD_HEIGHT / 2,
+    radius: QUEEN_SIZE / 2,
+    color: 'pink',
+};
+
+let holes = [
+    { x: 0, y: 0 },
+    { x: BOARD_WIDTH, y: 0 },
+    { x: BOARD_WIDTH, y: BOARD_HEIGHT },
+    { x: 0, y: BOARD_HEIGHT },
+];
+
+let score = 0;
+
+// Draw the game board
+function drawBoard() {
+    ctx.fillStyle = '#964B00';
+    ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+}
+
+// Draw the striker
+function drawStriker() {
+    ctx.fillStyle = striker.color;
+    ctx.beginPath();
+    ctx.arc(striker.x, striker.y, striker.radius, 0, 2 * Math.PI);
+    ctx.fill();
+}
+
+// Draw the coins
+function drawCoins() {
+    coins.forEach((coin) => {
+        ctx.fillStyle = coin.color;
+        ctx.beginPath();
+        ctx.arc(coin.x, coin.y, coin.radius, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+}
+
+// Draw the queen
+function drawQueen() {
+    ctx.fillStyle = queen.color;
+    ctx.beginPath();
+    ctx.arc(queen.x, queen.y, queen.radius, 0, 2 * Math.PI);
+    ctx.fill();
+}
+
+// Draw the holes
+function drawHoles() {
+    holes.forEach((hole) => {
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(hole.x, hole.y, HOLE_SIZE / 2, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+}
+
+// Update game state
+function update() {
+    // Update striker position
+    striker.x += striker.vx;
+    striker.y += striker.vy;
+
+    // Apply friction
+    striker.vx *= 0.99;
+    striker.vy *= 0.99;
+
+    // Check collisions with coins
+    coins.forEach((coin) => {
+        const distance = Math.sqrt((striker.x - coin.x) ** 2 + (striker.y - coin.y) ** 2);
+        if (distance < striker.radius + coin.radius) {
+            // Handle collision
+            coin.x += (striker.vx / 10);
+            coin.y += (striker.vy / 10);
+            if (coin.color === 'black') score += 10;
+            else if (coin.color === 'gold') score += 20;
+        }
+    });
+
+    // Check collisions with queen
+    const queenDistance = Math.sqrt((striker.x - queen.x) ** 2 + (striker.y - queen.y) ** 2);
+    if (queenDistance < striker.radius + queen.radius) {
+        // Handle collision
+        score += 100;
+    }
+
+    // Check if coins are in holes
+    coins.forEach((coin, index) => {
+        holes.forEach((hole) => {
+            const distance = Math.sqrt((coin.x - hole.x) ** 2 + (coin.y - hole.y) ** 2);
+            if (distance < coin.radius + HOLE_SIZE / 2) {
+                // Remove coin from game
+                coins.splice(index, 1);
+            }
+        });
+    });
+
+    // Draw everything
+    ctx.clearRect(0,
